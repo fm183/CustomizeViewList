@@ -52,7 +52,7 @@ public class ChatView extends View {
         paint = new Paint(Paint.ANTI_ALIAS_FLAG);
         paint.setStrokeWidth(lineWidth);
         paint.setColor(Color.WHITE);
-        paint.setStyle(Paint.Style.FILL_AND_STROKE);
+        paint.setStyle(Paint.Style.STROKE);
 
         textPaint = new TextPaint(Paint.ANTI_ALIAS_FLAG);
         textPaint.setColor(Color.WHITE);
@@ -63,6 +63,7 @@ public class ChatView extends View {
         effectPaint = new Paint(Paint.ANTI_ALIAS_FLAG);
         effectPaint.setStrokeWidth(lineWidth / 2f);
         effectPaint.setColor(Color.WHITE);
+        effectPaint.setStyle(Paint.Style.STROKE);
         effectPaint.setPathEffect(new DashPathEffect(new float[]{5,5},0));
     }
 
@@ -106,6 +107,7 @@ public class ChatView extends View {
         for (int i = 0;i < xCount - 1;i ++){
             float tmpStartX =  startX + mXLineWidth * (i + 1);
             canvas.drawLine(tmpStartX,startY,tmpStartX,startY - UtilsSize.dpToPx(getContext(),10),paint);
+
             String text = X_STRING_ARRAY[i];
             textPaint.getTextBounds(text,0,text.length(),rectText);
             int textWidth = rectText.right - rectText.left;
@@ -118,7 +120,13 @@ public class ChatView extends View {
 
         for (int i = 0;i < yCount - 1;i ++){
             float tmpStartY = startY - mYLineHeight * (i + 1);
-            canvas.drawLine(startX,tmpStartY,endX,tmpStartY,effectPaint);
+            // 画虚线 drawLine 有问题,所以换成drawPath
+//            canvas.drawLine(startX,tmpStartY,endX,tmpStartY,effectPaint);
+            path.reset(); // 解决虚线变成实线问题
+            path.moveTo(startX,tmpStartY);
+            path.lineTo(endX,tmpStartY);
+            canvas.drawPath(path,effectPaint);
+
             String text = Y_STRING_ARRAY[i];
             textPaint.getTextBounds(text,0,text.length(),rectText);
             int textWidth = rectText.right - rectText.left;
@@ -127,14 +135,23 @@ public class ChatView extends View {
         }
 
         canvas.save();
-        float firstStartX = startX + mXLineWidth;
-        float firstStartY = startY - mYLineHeight;
-        Log.d(getClass().getSimpleName(),"firstStartX="+firstStartX+",firstStartY="+firstStartY+",mXLineWidth="+mXLineWidth+",mYLineHeight="+mYLineHeight);
-        path.moveTo(startX,startY);
-        path.lineTo(startX + 20,startY - 20);
-        path.quadTo(startX + mXLineWidth / 2f,startY - mYLineHeight / 2f,firstStartX,firstStartY);
-        path.close();
-        canvas.drawPath(path,paint);
-        canvas.restore();
+
+        float tmpStartX = startX;
+        float tmpStartY = startY;
+        for (int i = 0;i < xCount - 1;i ++){
+            float tmpEndX = tmpStartX + mXLineWidth;
+            float tmpEndY = tmpStartY - mYLineHeight;
+            Log.d(getClass().getSimpleName(),"tmpEndX="+tmpEndX+",tmpEndY="+tmpEndY+",mXLineWidth="+mXLineWidth+",mYLineHeight="+mYLineHeight);
+            path.reset();
+            path.moveTo(tmpStartX,tmpStartY);
+            path.quadTo(tmpStartX + mXLineWidth/2f,tmpStartY,tmpEndX,tmpEndY);
+            // 使用close 会出现两条线
+//        path.close();
+            canvas.drawPath(path,paint);
+            canvas.restore();
+            tmpStartX = tmpEndX;
+            tmpStartY = tmpEndY;
+        }
+
     }
 }
